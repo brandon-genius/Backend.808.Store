@@ -7,8 +7,10 @@ import json
 from mock_data import mock_catalog
 from config import db
 from bson import ObjectId
+from flask_cors import CORS
 
 app = Flask('server')
+CORS(app) #disables CORS policy
 
 
 @app.route("/home")
@@ -60,6 +62,24 @@ def save_product():
     product = request.get_json()
     db.products.insert_one(product)
 
+    if not "title" in product or len(product["title"]) < 6:
+        return abort(400, "title must exist and should be more than 5")
+
+    if not "price" in product:
+        return abort(400, "price is req")
+
+    if type(product["price"]) != float and type(product["price"]) != int:
+        return abort(400,"price must be a valid number")
+
+    if product["price"] <= 0:
+        return abort(400, "price must be greater then 0")
+
+    if not "image" in product or len(product["image"]) <1:
+        return abort(400, "image is req")
+
+    if not "category" in product or len(product["category"]) <1:
+        return abort(400, "category is req")
+
     print("Product saved")
     print(product)
 
@@ -99,6 +119,11 @@ def get_total():
 #find a product based on the unique id
 @app.route("/api/products/<id>")
 def find_product(id):
+
+    if not ObjectId.is_valid(id):
+        return abort(400, "id must be a valid ObjectId value")
+
+
     prod = db.products.find_one({"_id": ObjectId(id)})
     prod["_id"] = str(prod["_id"])
 
